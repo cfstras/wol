@@ -28,7 +28,7 @@
 #include <sys/types.h>
 
 
-int udp_open (void);
+int udp_open (const char *interface_name);
 
 int tcp_open (const char *ip_str, unsigned int port);
 

@@ -56,6 +56,9 @@ static char *mac_str = NULL;
 /* IP Address or hostname magic packet is addressed to */
 static char *host_str = DEFAULT_IPADDR;
 
+/* outgoing interface name (or local IPv4 address) */
+static char *interface_str = NULL;
+
 /* filename with mac addresses */
 static char *pathname = NULL;
 
@@ -103,6 +106,7 @@ Wake On LAN client - wakes up magic packet compliant machines.\n\n\
 -w, --wait=NUM      wait NUM millisecs after sending\n\
 -h, --host=HOST     broadcast to this IP address or hostname\n\
 -i, --ipaddr=HOST   same as --host\n\
+-I, --interface=IF  send packets via interface IF\n\
 -p, --port=NUM      broadcast to this UDP port\n\
 -f, --file=FILE     read addresses from file FILE (\"-\" reads from stdin)\n\
     --passwd[=PASS] send SecureON password PASS (if no PASS is given, you\n\
@@ -144,7 +148,7 @@ parse_args (int argc, char *argv[])
   int c;
   int option_index;
   int password_set = 0;
-  char *options = "Vvw:h:i:p:f:s:-";
+  char *options = "Vvw:h:i:I:p:f:s:ru-";
   static struct option long_options[] = 
     {
       { "help", no_argument, NULL, 'H' },
@@ -153,6 +157,7 @@ parse_args (int argc, char *argv[])
       { "wait", required_argument, NULL, 'w' },
       { "host", required_argument, NULL, 'h' },
       { "ipaddr", required_argument, NULL, 'i' },
+      { "interface", required_argument, NULL, 'I' },
       { "port", required_argument, NULL, 'p' },
       { "file", required_argument, NULL, 'f' },
       { "passwd", optional_argument, NULL, 'P' },
@@ -207,6 +212,10 @@ parse_args (int argc, char *argv[])
 	case 'h':
 	case 'i':
 	  host_str = optarg;
+	  break;
+
+	case 'I':
+	  interface_str = optarg;
 	  break;
 
 
@@ -358,7 +367,7 @@ main (int argc, char *argv[])
 
   if (!proxy_mode)
     {
-      sockfd = udp_open ();
+      sockfd = udp_open (interface_str);
     }
   else
     {
