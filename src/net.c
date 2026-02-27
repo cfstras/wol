@@ -219,7 +219,7 @@ raw_open (void)
 }
 
 int
-udp_open (void)
+udp_open (const char *interface_name)
 {
   int optval;
   int sockfd;
