@@ -35,6 +35,8 @@
 #include <netdb.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <ifaddrs.h>
+#include <net/if.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netpacket/packet.h>
@@ -56,6 +58,114 @@ net_resolv (const char *hostname, struct in_addr *sin_addr)
     }
 
   memcpy ((void *) sin_addr, (const void *) hent->h_addr, (size_t) hent->h_length);
+
+  return 0;
+}
+
+
+static int
+net_ifaddr4 (const char *ifname, struct in_addr *addr)
+{
+  struct ifaddrs *ifaddr;
+  struct ifaddrs *ifa;
+
+  if (ifname == NULL || addr == NULL)
+    {
+      errno = EINVAL;
+      return -1;
+    }
+
+  if (getifaddrs (&ifaddr) != 0)
+    {
+      return -1;
+    }
+
+  for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
+    {
+      if (ifa->ifa_addr == NULL)
+        continue;
+
+      if (ifa->ifa_addr->sa_family != AF_INET)
+        continue;
+
+      if (strcmp (ifa->ifa_name, ifname) != 0)
+        continue;
+
+      *addr = ((struct sockaddr_in *) ifa->ifa_addr)->sin_addr;
+      freeifaddrs (ifaddr);
+      return 0;
+    }
+
+  freeifaddrs (ifaddr);
+  errno = ENOENT;
+  return -1;
+}
+
+
+static int
+net_configure_udp_interface (int sockfd, const char *interface_name)
+{
+  int configured = 0;
+
+  if (interface_name == NULL)
+    {
+      return 0;
+    }
+
+  /* If the argument is an IPv4 address, bind to it directly. */
+  {
+    struct in_addr addr;
+    if (inet_aton (interface_name, &addr) != 0)
+      {
+        struct sockaddr_in local;
+        memset (&local, 0, sizeof (local));
+        local.sin_family = AF_INET;
+        local.sin_addr = addr;
+        local.sin_port = htons (0);
+        if (bind (sockfd, (const struct sockaddr *) &local, sizeof (local)) == 0)
+          {
+            return 0;
+          }
+        return -1;
+      }
+  }
+
+  /* Prefer an OS-level "bind to interface" when available. */
+#ifdef IP_BOUND_IF
+  {
+    unsigned int idx = if_nametoindex (interface_name);
+    if (idx != 0)
+      {
+        if (setsockopt (sockfd, IPPROTO_IP, IP_BOUND_IF, &idx, sizeof (idx)) == 0)
+          {
+            configured = 1;
+          }
+      }
+  }
+#endif
+
+  /* Fallback: bind the socket's source address to the interface's IPv4. */
+  {
+    struct in_addr addr;
+    if (net_ifaddr4 (interface_name, &addr) == 0)
+      {
+        struct sockaddr_in local;
+        memset (&local, 0, sizeof (local));
+        local.sin_family = AF_INET;
+        local.sin_addr = addr;
+        local.sin_port = htons (0);
+        if (bind (sockfd, (const struct sockaddr *) &local, sizeof (local)) == 0)
+          {
+            configured = 1;
+          }
+      }
+  }
+
+  if (!configured)
+    {
+      errno = EINVAL;
+      return -1;
+    }
 
   return 0;
 }
@@ -112,7 +222,7 @@ raw_open (void)
 
 
 int
-udp_open (void)
+udp_open (const char *interface_name)
 {
   int optval;
   int sockfd;
@@ -129,6 +239,13 @@ udp_open (void)
   if (setsockopt (sockfd, SOL_SOCKET, SO_BROADCAST, &optval, sizeof (optval)))
     {
       perror ("setsockopt() failed");
+      close (sockfd);
+      return -1;
+    }
+
+  if (net_configure_udp_interface (sockfd, interface_name) != 0)
+    {
+      error (0, errno, _("Cannot use interface '%s'"), interface_name);
       close (sockfd);
       return -1;
     }
