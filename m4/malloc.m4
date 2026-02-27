@@ -7,10 +7,23 @@ dnl
 
 AC_DEFUN([jm_FUNC_MALLOC],
 [
+ AC_REQUIRE([AC_CANONICAL_HOST])
+
  dnl xmalloc.c requires that this symbol be defined so it doesn't
  dnl mistakenly use a broken malloc -- as it might if this test were omitted.
  AC_DEFINE_UNQUOTED(HAVE_DONE_WORKING_MALLOC_CHECK, 1,
                     [Define if the malloc check has been performed. ])
+
+ dnl On modern platforms (macOS, Linux) don't emit gnulib replacement mappings
+ dnl like '#define malloc rpl_malloc'. These can cause link errors if the
+ dnl replacement objects are not built, and the system malloc is fine.
+ if test "x$jm_cv_func_working_malloc" = x; then
+   case $host_os in
+     darwin* | linux*)
+       jm_cv_func_working_malloc=yes
+       ;;
+   esac
+ fi
 
  AC_CACHE_CHECK([for working malloc], jm_cv_func_working_malloc,
   [AC_TRY_RUN([
