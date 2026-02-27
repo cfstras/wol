@@ -24,8 +24,12 @@
 
 #include <sys/types.h>
 
-char *malloc ();
-char *realloc ();
+#if STDC_HEADERS
+# include <stdlib.h>
+#else
+void *malloc ();
+void *realloc ();
+#endif
 
 /* Change the size of an allocated block of memory P to N bytes,
    with error checking.  If N is zero, change it to 1.  If P is NULL,
