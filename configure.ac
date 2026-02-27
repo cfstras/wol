@@ -61,15 +61,17 @@ dnl check data types
 AC_CHECK_SIZEOF(unsigned char, 1)
 
 ether_includes=""
-AC_CHECK_TYPE([struct ether_addr], , , [#include <netinet/ether.h>]) dnl Linux
+
+dnl Prefer <net/ethernet.h> when it provides the full definition (e.g. Darwin).
+AC_CHECK_TYPE([struct ether_addr], , , [#include <net/ethernet.h>]) dnl BSD/Darwin
 if test "$ac_cv_type_struct_ether_addr" = "yes"; then
 	AC_DEFINE_UNQUOTED(HAVE_STRUCT_ETHER_ADDR, 1)
-	ether_includes="#include <netinet/ether.h>"
-else dnl BSD
-	AC_CHECK_TYPE([struct ether_addr], , , [#include <net/ethernet.h>])
+	ether_includes="#include <net/ethernet.h>"
+else dnl Linux
+	AC_CHECK_TYPE([struct ether_addr], , , [#include <netinet/ether.h>])
 	if test "$ac_cv_type_struct_ether_addr" = "yes"; then
 		AC_DEFINE_UNQUOTED(HAVE_STRUCT_ETHER_ADDR, 1)
-		ether_includes="#include <net/ethernet.h>"
+		ether_includes="#include <netinet/ether.h>"
 	else dnl Solaris
 		ac_cv_type_struct_ether_addr="no"
 		AC_MSG_CHECKING([for struct ether_addr])
@@ -241,11 +243,11 @@ dnl *** Because of that, you won't be able to run certain tests via 'make check'
 dnl fi
 
 
-dnl config.h.in defines
-AC_DEFINE([HAVE_STRUCT_ETHER_ADDR], 0, [struct ether_addr])
-AC_DEFINE([HAVE_STRUCT_ETHER_ADDR_ETHER_ADDR_OCTET], 0, [struct ether_addr.ether_addr_octet])
-AC_DEFINE([HAVE_STRUCT_ETHER_ADDR_OCTET], 0, [struct ether_addr.octet])
-AC_DEFINE([HAVE_ETHER_HOSTTON], 0, [ether_hostton])
+dnl config.h.in templates (avoid overriding probed values)
+AH_TEMPLATE([HAVE_STRUCT_ETHER_ADDR], [struct ether_addr])
+AH_TEMPLATE([HAVE_STRUCT_ETHER_ADDR_ETHER_ADDR_OCTET], [struct ether_addr.ether_addr_octet])
+AH_TEMPLATE([HAVE_STRUCT_ETHER_ADDR_OCTET], [struct ether_addr.octet])
+AH_TEMPLATE([HAVE_ETHER_HOSTTON], [ether_hostton])
 
 
 dnl full featured warnings
