@@ -40,6 +40,14 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#ifdef HAVE_LINUX_IF_PACKET_H
+#include <linux/if_packet.h>
+#endif
+
+#ifdef HAVE_NET_ETHERNET_H
+#include <net/ethernet.h>
+#endif
+
 #include "net.h"
 #include "wol.h"
 
@@ -188,6 +196,10 @@ net_close (int socket)
 int
 raw_open (void)
 {
+#if !HAVE_DECL_PF_PACKET
+  errno = ENOTSUP;
+  return -1;
+#else
   int optval;
   int sockfd;
 
@@ -216,6 +228,7 @@ raw_open (void)
     }
 
   return sockfd;
+#endif
 }
 
 int

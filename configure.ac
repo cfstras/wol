@@ -135,6 +135,13 @@ dnl
 
 AC_CHECK_HEADERS([netinet/ether.h net/ethernet.h netinet/in.h])
 
+dnl Linux raw packet sockets
+AC_CHECK_HEADERS([linux/if_packet.h])
+AC_CHECK_DECLS([PF_PACKET], [], [], [[
+#include <sys/types.h>
+#include <sys/socket.h>
+]])
+
 
 dnl `net/if.h'
 dnl     On Darwin, this file requires that `stdio.h' and `sys/socket.h' be
