@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# Minimal replacement for Automake's historical 'mkinstalldirs' helper.
+# Creates each directory argument (like 'mkdir -p').
+
+set -e
+
+if [ "$#" -eq 0 ]; then
+  exit 0
+fi
+
+for dir in "$@"; do
+  # Skip empty arguments defensively.
+  [ -n "$dir" ] || continue
+  mkdir -p "$dir"
+done
