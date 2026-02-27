@@ -1,5 +1,9 @@
 #!/bin/bash
-set -euo pipefail
+set -euxo pipefail
+
+make clean || :
+make distclean || :
+
 ./autogen.sh
 ./configure \
     --disable-dependency-tracking \
