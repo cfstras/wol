@@ -19,6 +19,8 @@ config.log
 config.status
 config.sub
 config.h
+config.h.in~
+configure~
 stamp-h1
 /autom4te.cache/
 /doc/

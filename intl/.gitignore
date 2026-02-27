@@ -1,0 +1,7 @@
+Makefile
+charset.alias
+libintl.a
+libintl.h
+libgnuintl.h
+ref-add.sed
+ref-del.sed
